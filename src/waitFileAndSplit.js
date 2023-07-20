@@ -5,50 +5,50 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const availableSpace = {};
+function makeFileName(num) {
+  return path.resolve(`${num}.txt`);
+}
 
-function fileSplitter() {
+function writeLineToFile(num, line) {
+  fs.appendFileSync(makeFileName(num), line + "\n", () => {});
+}
+
+async function fileSplitter() {
+  console.info("Splitting process started.");
+
   const filepath = path.resolve(process.env.FILENAME);
 
-  async function processLineByLine() {
-    const fileStream = fs.createReadStream(filepath);
+  const fileStream = fs.createReadStream(filepath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
 
-    const rl = readline.createInterface({
-      input: fileStream,
-      crlfDelay: Infinity,
-    });
+  const freeSpace = [parseInt(process.env.RAM_LIMIT)];
 
-    let currentFile = 0;
-    let currentFileSize = 0;
-    const availableMemory =
-      parseInt(process.env.RAM_LIMIT) - parseInt(process.env.RESERVED_RAM);
-    // const availableMemory = 1000;
+  // iterating through lines and passing them to smaller files
+  for await (const line of rl) {
+    let lineSizeInBytes = Buffer.byteLength(line, "utf8");
 
-    for await (const line of rl) {
-      let lineSizeInBytes = Buffer.byteLength(line, "utf8");
+    let spaceFound = 0;
 
-      if (currentFileSize + 1 + lineSizeInBytes <= availableMemory) {
-        fs.appendFileSync(`${currentFile}.txt`, line + "\n", () => {});
-        currentFileSize = fs.statSync(`${currentFile}.txt`).size;
+    for (let i = 0; i < freeSpace.length; i++) {
+      // -1 byte for a newline
+      if (lineSizeInBytes <= freeSpace[i] - 1) {
+        writeLineToFile(i, line);
+        freeSpace[i] = freeSpace[i] - lineSizeInBytes - 1;
+        spaceFound = 1;
+        break;
       }
-      console.log(`Line from file: ${line}`);
+    }
+
+    // no existing files had enough space for line, so we create a new file
+    if (!spaceFound) {
+      writeLineToFile(freeSpace.length, line);
+      freeSpace.push(parseInt(process.env.RAM_LIMIT) - lineSizeInBytes - 1);
     }
   }
-
-  processLineByLine();
+  console.info("Splitting process finished.");
 }
 
-function waitFileAndSplit() {
-  const checkTime = 1000;
-  setTimeout(() => {
-    fs.readFile(path.resolve(process.env.FILENAME), "utf8", function (err) {
-      if (err) {
-        waitFileAndSplit();
-      } else {
-        return fileSplitter();
-      }
-    });
-  }, checkTime);
-}
-
-exports.waitFileAndSplit = waitFileAndSplit;
+exports.fileSplitter = fileSplitter;

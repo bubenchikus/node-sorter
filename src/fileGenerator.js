@@ -7,30 +7,22 @@ dotenv.config();
 function generateLineWithLength(stringSize) {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let counter = 0;
   let result = "";
 
-  // minus one byte for a newline
-  while (counter < stringSize - 1) {
+  // - 1 byte for a newline
+  while (Buffer.byteLength(result, "utf8") < stringSize - 1) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
-    counter += 1;
   }
+
   return result + "\n";
 }
 
-// function generateLine(sizeLimit) {
-//   if (sizeLimit > parseInt(process.env.RAM_LIMIT)) {
-//     return generateLineWithLength(
-//       Math.floor(Math.random() * (parseInt(process.env.RAM_LIMIT) - 1024 + 1))
-//     );
-//   } else {
-//     return generateLineWithLength(sizeLimit);
-//   }
-// }
-
 function generateLine(sizeLimit) {
-  if (sizeLimit > 100) {
-    return generateLineWithLength(Math.floor(Math.random() * (100 + 1)));
+  const maxLineLength = process.env.LINE_SIZE_LIMIT; //bytes
+  if (sizeLimit > maxLineLength) {
+    return generateLineWithLength(
+      Math.floor(Math.random() * maxLineLength + 1)
+    );
   } else {
     return generateLineWithLength(sizeLimit);
   }
@@ -53,24 +45,12 @@ function fileGenerator() {
 
           console.info("Populating file with random strings...");
 
-          try {
-            while (currentSize < maxFileSize) {
-              const newLine = generateLine(maxFileSize - currentSize);
+          while (currentSize < maxFileSize) {
+            const newLine = generateLine(maxFileSize - currentSize);
 
-              fs.appendFileSync(path.resolve(process.env.FILENAME), newLine);
+            fs.appendFileSync(filepath, newLine);
 
-              currentSize = fs.statSync(filepath).size;
-            }
-          } catch (err) {
-            console.warn(
-              "Something went wrong while populating file. Deleting it..."
-            );
-            fs.unlink(filepath, (err) => {
-              if (err) {
-                return console.warn(err.message);
-              }
-              console.info("Old file successfully deleted.");
-            });
+            currentSize = fs.statSync(filepath).size;
           }
 
           console.info("File successfully populated.");
@@ -82,4 +62,4 @@ function fileGenerator() {
   });
 }
 
-exports.fileGenerator = fileGenerator;
+fileGenerator();
