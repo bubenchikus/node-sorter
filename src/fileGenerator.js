@@ -4,13 +4,13 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-function generateLineWithLength(stringSize) {
+function generateLineWithLength(lineSize) {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
 
   // - 1 byte for a newline
-  while (Buffer.byteLength(result, "utf8") < stringSize - 1) {
+  while (Buffer.byteLength(result, "utf8") < lineSize - 1) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
 
@@ -43,17 +43,17 @@ function fileGenerator() {
           const maxFileSize = parseInt(process.env.FILESIZE);
           let currentSize = 0;
 
-          console.info("Populating file with random strings...");
+          console.info("Populating file with random lines...");
 
           while (currentSize < maxFileSize) {
             const newLine = generateLine(maxFileSize - currentSize);
 
             fs.appendFileSync(filepath, newLine);
 
-            currentSize = fs.statSync(filepath).size;
+            currentSize += Buffer.byteLength(newLine, "utf8");
           }
 
-          console.info("File successfully populated.");
+          console.info("File successfully populated.", "\n" + "*".repeat(5));
         });
       } else {
         return console.warn(err.message);

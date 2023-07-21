@@ -1,19 +1,29 @@
-const express = require("express");
-const dotenv = require("dotenv");
-
-const { fileSplitter } = require("./src/waitFileAndSplit");
-const { cleanUpChunks } = require("./src/cleanUp");
+const { splitter } = require("./src/splitter");
+const { cleanUpSorted, cleanUpChunks } = require("./src/helpers/cleaners");
 const { sorter } = require("./src/sorter");
+const { merger } = require("./src/merger");
+const { measuredTimeMessage } = require("./src/helpers/loggers");
 
-dotenv.config();
+async function main() {
+  cleanUpSorted();
+  cleanUpChunks();
 
-const app = express();
+  const time_1 = performance.now();
+  await splitter();
+  const time_2 = performance.now();
+  measuredTimeMessage(time_1, time_2);
 
-app.listen(process.env.PORT, async (err) => {
-  if (err) return console.warn(err);
-  console.info(`Server is OK and running on port ${process.env.PORT}.`);
+  const time_3 = performance.now();
+  const lineCount = sorter();
+  const time_4 = performance.now();
+  measuredTimeMessage(time_3, time_4);
+
+  const time_5 = performance.now();
+  await merger(lineCount);
+  const time_6 = performance.now();
+  measuredTimeMessage(time_5, time_6);
 
   cleanUpChunks();
-  await fileSplitter();
-  sorter();
-});
+}
+
+main();

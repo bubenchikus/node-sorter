@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const dotenv = require("dotenv");
 
 function cleanUpByRegex(regex) {
   fs.readdirSync(path.resolve())
@@ -17,5 +18,16 @@ function cleanUpAllTxt() {
   cleanUpByRegex(/[.]txt$/);
 }
 
+function cleanUpSorted() {
+  console.info("Cleaning up sorted file...");
+  const filepath = path.resolve(process.env.SORTED_FILENAME);
+  fs.stat(filepath, (err) => {
+    if (!err) {
+      fs.unlinkSync(filepath);
+    }
+  });
+}
+
 exports.cleanUpChunks = cleanUpChunks;
 exports.cleanUpAllTxt = cleanUpAllTxt;
+exports.cleanUpSorted = cleanUpSorted;

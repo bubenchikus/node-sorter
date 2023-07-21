@@ -5,30 +5,31 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-function makeFileName(num) {
-  return path.resolve(`${num}.txt`);
-}
-
 function writeLineToFile(num, line) {
-  fs.appendFileSync(makeFileName(num), line + "\n", () => {});
+  fs.appendFileSync(path.resolve(`${num}.txt`), line + "\n");
 }
 
-async function fileSplitter() {
-  console.info("Splitting process started.");
+async function splitter() {
+  const fileSize =
+    parseInt(process.env.RAM_LIMIT) - parseInt(process.env.RAM_RESERVED);
+  console.info(
+    `Splitting process started. Chunk filesize will be ${Math.ceil(
+      fileSize / (1024 * 1024)
+    )} MiB.`
+  );
 
   const filepath = path.resolve(process.env.FILENAME);
 
-  const fileStream = fs.createReadStream(filepath);
   const rl = readline.createInterface({
-    input: fileStream,
+    input: fs.createReadStream(filepath),
     crlfDelay: Infinity,
   });
 
-  const freeSpace = [parseInt(process.env.RAM_LIMIT)];
+  const freeSpace = [fileSize];
 
   // iterating through lines and passing them to smaller files
   for await (const line of rl) {
-    let lineSizeInBytes = Buffer.byteLength(line, "utf8");
+    const lineSizeInBytes = Buffer.byteLength(line, "utf8");
 
     let spaceFound = 0;
 
@@ -45,10 +46,10 @@ async function fileSplitter() {
     // no existing files had enough space for line, so we create a new file
     if (!spaceFound) {
       writeLineToFile(freeSpace.length, line);
-      freeSpace.push(parseInt(process.env.RAM_LIMIT) - lineSizeInBytes - 1);
+      freeSpace.push(fileSize - lineSizeInBytes - 1);
     }
   }
   console.info("Splitting process finished.");
 }
 
-exports.fileSplitter = fileSplitter;
+exports.splitter = splitter;
