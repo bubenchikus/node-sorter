@@ -8,18 +8,15 @@ dotenv.config();
 async function findLine(filepath, index) {
   const rl = readline.createInterface({
     input: fs.createReadStream(filepath),
-    crlfDelay: Infinity,
   });
 
   let counter = 0;
-
   for await (const line of rl) {
     if (counter === index) {
       return line;
     }
     counter++;
   }
-  return "";
 }
 
 function promiseFirstLines(chunks) {
@@ -32,7 +29,7 @@ function promiseFirstLines(chunks) {
   return promisedLines;
 }
 
-async function merger(lineCount = {}) {
+async function merger() {
   console.info("Merging process started.");
   const chunks = listChunks();
 
@@ -57,13 +54,13 @@ async function merger(lineCount = {}) {
       info[maxFilepath].currentLine + "\n"
     );
 
-    if (info[maxFilepath].index < lineCount[maxFilepath] - 1) {
-      info[maxFilepath].index += 1;
-      info[maxFilepath].currentLine = await findLine(
-        maxFilepath,
-        info[maxFilepath].index
-      );
-    } else {
+    info[maxFilepath].index += 1;
+    info[maxFilepath].currentLine = await findLine(
+      maxFilepath,
+      info[maxFilepath].index
+    );
+
+    if (typeof info[maxFilepath] === "undefined") {
       console.info(`${maxFilepath} is merged into final sorted file.`);
       delete info[maxFilepath];
     }

@@ -14,12 +14,12 @@ async function main() {
   measuredTimeMessage(time_1, time_2);
 
   const time_3 = performance.now();
-  const lineCount = sorter();
+  sorter();
   const time_4 = performance.now();
   measuredTimeMessage(time_3, time_4);
 
   const time_5 = performance.now();
-  await merger(lineCount);
+  await merger();
   const time_6 = performance.now();
   measuredTimeMessage(time_5, time_6);
 
